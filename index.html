@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Syncthing 解密工具</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Menu Bar -->
+    <nav class="menubar">
+      <div class="menu-item" id="menu-tools">
+        <span>工具</span>
+        <div class="menu-dropdown hidden" id="dropdown-tools">
+          <div class="menu-dropdown-item" id="btn-toggle-log">隐藏日志</div>
+          <div class="menu-dropdown-item" id="btn-update-syncthing">更新 Syncthing</div>
+        </div>
+      </div>
+      <div class="menu-item" id="menu-help">
+        <span>帮助</span>
+        <div class="menu-dropdown hidden" id="dropdown-help">
+          <div class="menu-dropdown-item" id="btn-about">关于</div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <div class="form-section">
+        <!-- Mode selector -->
+        <div class="form-row">
+          <label>解密模式</label>
+          <div class="mode-selector">
+            <button class="mode-btn active" data-mode="folder">文件夹解密</button>
+            <button class="mode-btn" data-mode="file">文件解密</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="folder-id">Folder ID</label>
+          <input type="text" id="folder-id" placeholder="若忘记 Folder ID，可在 .stfolder 目录内的文件里寻找" autocomplete="off" />
+        </div>
+        <div class="form-row">
+          <label for="password">密码</label>
+          <input type="password" id="password" placeholder="输入解密密码" autocomplete="off" />
+        </div>
+
+        <!-- Folder mode -->
+        <div id="mode-folder">
+          <div class="form-row">
+            <label for="source-path">加密目录</label>
+            <div class="input-group">
+              <input type="text" id="source-path" placeholder="选择加密文件夹路径" readonly />
+              <button class="btn-browse" id="btn-browse-source">浏览</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- File mode -->
+        <div id="mode-file" class="hidden">
+          <div class="form-row">
+            <label>加密文件</label>
+            <div class="input-group">
+              <input type="text" id="file-list-display" placeholder="可多选" readonly />
+              <button class="btn-browse" id="btn-browse-files">选择</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="dest-path">输出目录</label>
+          <div class="input-group">
+            <input type="text" id="dest-path" placeholder="选择解密输出路径" readonly />
+            <button class="btn-browse" id="btn-browse-dest">浏览</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-section">
+        <button class="btn-primary" id="btn-decrypt">
+          <span>开始解密</span>
+        </button>
+        <div class="status-badge hidden" id="status-badge"></div>
+      </div>
+
+      <div class="log-section" id="log-section">
+        <div class="log-header">
+          <span>日志输出</span>
+          <div>
+            <button class="btn-clear" id="btn-export-log">导出</button>
+            <button class="btn-clear" id="btn-clear-log">清空</button>
+          </div>
+        </div>
+        <div class="log-area" id="log-area">
+          <div class="log-line log-info">Syncthing 解密工具已就绪。</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Update Modal -->
+  <div class="modal-overlay hidden" id="modal-update">
+    <div class="modal">
+      <h2>更新 Syncthing</h2>
+      <div class="update-versions">
+        <span id="ver-local">本地版本：检测中...</span>
+        <span id="ver-latest">最新版本：待查询</span>
+      </div>
+      <div class="update-options" id="update-options">
+        <div class="update-checks">
+          <label class="checkbox-label"><input type="checkbox" id="chk-mirror" />使用镜像站</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-sys-proxy" />使用系统代理</label>
+          <label class="checkbox-label"><input type="checkbox" id="chk-custom-proxy" />使用自定义代理</label>
+          <div class="inline-proxy hidden" id="row-custom-proxy">
+            <span class="inline-proxy-label">代理地址</span>
+            <input type="text" id="custom-proxy" placeholder="http://127.0.0.1:7890" />
+          </div>
+        </div>
+      </div>
+      <!-- Progress area (shown during update) -->
+      <div class="update-progress hidden" id="update-progress-area">
+        <div class="progress-track">
+          <div class="progress-fill" id="update-progress-bar"></div>
+        </div>
+        <div class="progress-text" id="update-progress-text">准备中...</div>
+      </div>
+      <!-- Result area (shown after update finishes) -->
+      <div class="update-result hidden" id="update-result-area">
+        <div class="result-icon" id="update-result-icon">✓</div>
+        <div class="result-text" id="update-result-text"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-start-update">更新</button>
+        <button class="btn-browse" id="btn-cancel-update">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Download Modal (syncthing missing) -->
+  <div class="modal-overlay hidden" id="modal-confirm-download">
+    <div class="modal">
+      <h2>缺少 Syncthing</h2>
+      <p>未检测到 syncthing.exe，是否立即下载？</p>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-confirm-download">下载</button>
+        <button class="btn-browse" id="btn-cancel-download">稍后</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div class="modal-overlay hidden" id="modal-about">
+    <div class="modal">
+      <p class="modal-version">Syncthing 解密工具 v1.0.0</p>
+      <p>解密 Syncthing 加密数据，而无需重新部署 Syncthing</p>
+      <div class="modal-meta">
+        <span id="syncthing-version">Syncthing 版本: 检测中...</span>
+      </div>
+      <div class="modal-license">
+        <p><strong>开源声明</strong></p>
+        <p>本软件基于 <strong>GNU GPL v3.0</strong> 发布于 <a href="#" class="ext-link" data-url="https://github.com/syncthing/syncthing">scdecrypt-gui</a></p>
+        <p>本软件使用了以下开源组件：</p>
+        <ul>
+          <li><a href="#" class="ext-link" data-url="https://github.com/syncthing/syncthing">Syncthing</a> — MPL-2.0 License</li>
+          <li><a href="#" class="ext-link" data-url="https://github.com/tauri-apps/tauri">Tauri</a> — MIT / Apache-2.0 License</li>
+          <li><a href="#" class="ext-link" data-url="https://github.com/nicebyte/nicebyte-webview2">WebView2 Runtime</a> — Microsoft License</li>
+        </ul>
+      </div>
+      <button class="btn-primary" id="btn-close-about">确定</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
