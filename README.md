@@ -10,7 +10,7 @@
 
 ## 使用方法
 
-- 从 Release 下载（目前仅提供 Windows X64，其他架构可自行编译）
+- 从 [Releases](../../releases) 下载（目前仅提供 Windows X64，其他架构可自行编译）
 - 程序会自动检测同目录下的 syncthing 程序，若不存在，可通过内置更新器下载
 - 准备 Folder ID（若忘记，可在 .stfloder 目录中查询）、加密密码
 - 选择要解密的文件夹或文件，输入 Folder ID 和密码
